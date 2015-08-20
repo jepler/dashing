@@ -22,6 +22,8 @@ freely, subject to the following restrictions:
 
 #include "dashing.h"
 #include <iostream>
+#include <boost/random.hpp>
+#include <boost/random/random_device.hpp>
 
 std::vector<Segment> SegmentsFromFile(std::istream &fi, double jitter) {
     static boost::random_device urandom;

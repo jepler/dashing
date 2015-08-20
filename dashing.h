@@ -30,8 +30,6 @@ freely, subject to the following restrictions:
 #include <stdexcept>
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/algorithm/string/trim.hpp>
-#include <boost/random.hpp>
-#include <boost/random/random_device.hpp>
 
 struct PSMatrix {
     double a, b, c, d, e, f;
