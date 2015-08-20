@@ -31,107 +31,58 @@ freely, subject to the following restrictions:
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/algorithm/string/trim.hpp>
 
+namespace dashing
+{
+
 struct PSMatrix {
     double a, b, c, d, e, f;
 
-    PSMatrix inverse() const {
-        auto i = 1. / (a * d - b * c);
-        return PSMatrix{d*i, -b*i, -c*i, a*i, i*(c*f-e*d), i*(b*e-a*f)};
-    }
+    PSMatrix inverse() const;
 };
 
-inline PSMatrix Translation(double x, double y) {
-    PSMatrix r{1.,0.,0.,1.,x,y};
-    return r;
-}
-
-inline PSMatrix Rotation(double theta) {
-    double c = cos(theta), s = sin(theta);
-    PSMatrix r{c,s,-s,c,0.,0.};
-    return r;
-}
-
-inline PSMatrix XSkew(double xk) {
-    PSMatrix r{1.,0.,xk,1.,0.,0.};
-    return r;
-}
-
-inline PSMatrix YScale(double ys) {
-    PSMatrix r{1.,0.,0.,ys,0.,0.};
-    return r;
-}
+PSMatrix Translation(double x, double y);
+PSMatrix Rotation(double theta);
+PSMatrix XSkew(double xk);
+PSMatrix YScale(double ys);
 
 struct Point { double x, y; };
-Point operator*(const Point &p, const PSMatrix &m) {
+inline Point operator*(const Point &p, const PSMatrix &m) {
     Point r{ p.x*m.a + p.y*m.c + m.e,
                   p.x*m.b + p.y*m.d + m.f };
     return r;
 }
 
-PSMatrix operator*(const PSMatrix &m1, const PSMatrix m2) {
-    PSMatrix r{
-            m2.a * m1.a + m2.b * m1.c,
-            m2.a * m1.b + m2.b * m1.d,
-            m2.c * m1.a + m2.d * m1.c,
-            m2.c * m1.b + m2.d * m1.d,
-            m2.e * m1.a + m2.f * m1.c + m1.e,
-            m2.e * m1.b + m2.f * m1.d + m1.f};
-    return r;
-}
-
-std::vector<double> parse_numbers(std::string line) {
-    boost::algorithm::replace_all(line, ",", " ");
-    std::istringstream fi(line);
-    std::vector<double> result;
-    double d;
-    while((fi >> d)) result.push_back(d);
-    return result;
-}
-
-double radians(double degrees) { return degrees * acos(0) / 90.; }
+PSMatrix operator*(const PSMatrix &m1, const PSMatrix m2);
 
 struct Dash {
     PSMatrix tr, tf;
     std::vector<double> dash, sum;
 
-    template<class It>
     Dash(double th, double x0, double y0, double dx, double dy,
-            It dbegin, It dend) : dash(dbegin, dend) {
-        auto s = 0.;
-        for(auto d : dash) { sum.push_back(s); s += fabs(d); }
-        sum.push_back(s);
+            const std::vector<double>::const_iterator dbegin,
+            const std::vector<double>::const_iterator dend);
 
-        tr = Translation(x0, y0) * Rotation(th) * XSkew(dx / dy) * YScale(dy);
-        tf = tr.inverse();
-    }
-
-    static Dash FromString(const std::string &line, double scale) {
-        std::vector<double> words = parse_numbers(line);
-        if(words.size() < 5)
-            throw std::invalid_argument("not a valid dash specification");
-        for(auto i = words.begin() + 1; i != words.end(); i++) *i *= scale;
-        return Dash(radians(words.at(0)), words.at(1), words.at(2), words.at(3),
-            words.at(4), words.begin() + 5, words.end());        
-    }
+    static Dash FromString(const std::string &line, double scale);
 };
 
-// "sort" a segment so that its first component has the lower y-value
 struct Segment { Point p, q; };
-void ysort(Segment &s) {
+
+// "sort" a segment so that its first component has the lower y-value
+inline void ysort(Segment &s) {
     if(s.p.y < s.q.y) return;
     std::swap(s.p, s.q);
 }
 
-double intceil(double x) { return int(ceil(x)); }
-double intfloor(double x) { return int(floor(x)); }
+inline double intceil(double x) { return int(ceil(x)); }
+inline double intfloor(double x) { return int(floor(x)); }
 
-double pythonmod(double a, double b) {
+inline double pythonmod(double a, double b) {
     auto r = a - floor(a / b) * b;
     if(r == b) return 0;
     return r;
 }
 
-double utoidx(const Dash &d, double u, double &o) {
+inline double utoidx(const Dash &d, double u, double &o) {
     u = pythonmod(u, d.sum.back());
     for(size_t i = 1; i != d.sum.size(); i++) {
         if(u < d.sum[i]) { o = u - d.sum[i-1]; return i-1; }
@@ -266,4 +217,5 @@ void xyhatch(const HatchPattern &pattern, const C &c, Cb cb) {
     xyhatch(pattern, c.begin(), c.end(), cb);
 }
 
+}
 #endif

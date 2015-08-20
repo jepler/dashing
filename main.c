@@ -21,9 +21,12 @@ freely, subject to the following restrictions:
 // demo and benchmark program for dashing
 
 #include "dashing.h"
+#include "parse_numbers.h"
 #include <iostream>
 #include <boost/random.hpp>
 #include <boost/random/random_device.hpp>
+
+using namespace dashing;
 
 std::vector<Segment> SegmentsFromFile(std::istream &fi, double jitter) {
     static boost::random_device urandom;

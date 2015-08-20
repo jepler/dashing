@@ -7,6 +7,7 @@ On my core i5, it runs at over 1 million dashes per second.
 ![Example image](data/sf.png)
 
 ## API
+All items are in `namespace dashing`.  Most are in `dashing.h`, except as noted.
 
 `struct Point`:
     Has double-precision x and y coordinates.
@@ -32,7 +33,10 @@ On my core i5, it runs at over 1 million dashes per second.
     contours.  For each dash or dot in the resulting hatch, Cb is called
     with the output segment.
 
-Other items in the header file are implementation details.
+`parse_numbers(std::string line)`: Read a comma and/or space-separated
+    sequence of numbers into a vector
+
+Other items in the header files are implementation details.
 
 ## Demo program
 
