@@ -156,7 +156,7 @@ void uvdraw(const Dash &pattern, double v, double u1, double u2, Cb cb) {
 }
 
 template<class Cb>
-void uvspans(const Dash &pattern, std::vector<Segment> && segments, Cb cb) {
+void uvspans(const Dash &pattern, std::vector<Segment> && segments, Cb cb, std::vector<double> &uu) {
     if(segments.empty()) return; // no segments
 
     for(auto &s : segments) ysort(s);
@@ -185,7 +185,6 @@ void uvspans(const Dash &pattern, std::vector<Segment> && segments, Cb cb) {
     // "active" holds segments that may intersect with this span;
     // when v moves below an active segment, drop it from the active heap.
     // when v moves into a remaining segment, move it from segments to active.
-    std::vector<double> uu;
     for(auto v = vstart; v != vend; v++) {
         uu.clear();
 
@@ -243,8 +242,8 @@ struct HatchPattern {
 };
 
 template<class It, class Cb>
-void xyhatch(const Dash &pattern, It start, It end, Cb cb) {
-    std::vector<Segment> uvsegments;
+void xyhatch(const Dash &pattern, It start, It end, Cb cb, std::vector<Segment> &uvsegments, std::vector<double> &uu) {
+    uvsegments.clear();
     std::transform(start, end, std::back_inserter(uvsegments),
         [&](const Segment &s)
         { return Segment{s.p * pattern.tf, s.q * pattern.tf };
@@ -253,17 +252,20 @@ void xyhatch(const Dash &pattern, It start, It end, Cb cb) {
         Point p{u1, v}, q{u2, v};
         Segment xy{ p * pattern.tr, q * pattern.tr };
         cb(xy);
-    });
+    }, uu);
 }
 
 template<class It, class Cb>
 void xyhatch(const HatchPattern &pattern, It start, It end, Cb cb) {
-    for(const auto &i : pattern.d) xyhatch(i, start, end, cb);
+    std::vector<Segment> uvsegments;
+    std::vector<double> uu;
+    uu.reserve(8);
+    for(const auto &i : pattern.d) xyhatch(i, start, end, cb, uvsegments, uu);
 }
 
 template<class C, class Cb>
 void xyhatch(const HatchPattern &pattern, const C &c, Cb cb) {
-    for(const auto &i : pattern.d) xyhatch(i, c.begin(), c.end(), cb);
+    xyhatch(pattern, c.begin(), c.end(), cb);
 }
 
 #endif
