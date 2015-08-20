@@ -162,7 +162,7 @@ void uvspans(const Dash &pattern, std::vector<Segment> && segments, Cb cb) {
     for(auto &s : segments) ysort(s);
     std::sort(segments.begin(), segments.end(),
         [](const Segment &a, const Segment &b) {
-            return b.p.y < a.p.y; // sort in decreasing p.y
+            return a.p.y < b.p.y; // sort in increasing p.y
         });
 
     // we want to maintain the heap condition in such a way that we can always
@@ -172,9 +172,10 @@ void uvspans(const Dash &pattern, std::vector<Segment> && segments, Cb cb) {
             return b.q.y < a.q.y; // sort in decreasing q.y;
         };
 
-    std::vector<Segment> active;
+    auto segments_begin = segments.begin();
+    auto heap_begin = segments.begin(), heap_end = segments.begin();
 
-    auto vstart = intfloor(segments.back().p.y);
+    auto vstart = intfloor(segments.front().p.y);
     auto vend = intceil(std::max_element(segments.begin(), segments.end(), 
                 [](const Segment &a, const Segment &b) {
                         return a.p.y < b.p.y; // sort in increasing q.y;
@@ -188,22 +189,22 @@ void uvspans(const Dash &pattern, std::vector<Segment> && segments, Cb cb) {
     for(auto v = vstart; v != vend; v++) {
         uu.clear();
 
-        while(!active.empty() && active.front().q.y < v)
+        while(heap_begin != heap_end && heap_begin->q.y < v)
         {
-            std::pop_heap(active.begin(), active.end(), heapcmp);
-            active.pop_back();
+            std::pop_heap(heap_begin, heap_end, heapcmp);
+            heap_end --;
         }
-        while(!segments.empty() && segments.back().p.y < v) {
-            const auto &s = segments.back();
+        while(segments_begin != segments.end() && segments_begin->p.y < v) {
+            const auto &s = *segments_begin;
             if(s.q.y >= v) {
-                active.push_back(s);
-                std::push_heap(active.begin(), active.end(), heapcmp);
+                *heap_end++ = s;
+                std::push_heap(heap_begin, heap_end, heapcmp);
             }
-            segments.pop_back();
+            segments_begin ++;
         }
 
         //std::cerr << "v=" << v << " heap size=" << active.size() << "\n";
-        for(const auto &s : active) {
+        for(const auto &s : boost::make_iterator_range(heap_begin, heap_end)) {
             auto du = s.q.x - s.p.x;
             auto dv = s.q.y - s.p.y;
             if(dv) uu.push_back(s.p.x + du * (v - s.p.y) / dv);
