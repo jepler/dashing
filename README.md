@@ -4,6 +4,8 @@ License: permissive (zlib); see source files for additional details.
 
 On my core i5, it runs at over 1 million dashes per second.
 
+![Example image](data/sf.png)
+
 ## API
 
 `struct Point`:
