@@ -116,13 +116,18 @@ int main(int argc, char **argv) {
       "preserveAspectRatio=\"xMidyMid\" "
       "xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" "
       "xmlns:xlink=\"http://www.w3.org/1999/xlink\">"
-      "<path d=\"M-100000 0L100000 0M0 -100000L0 100000\" stroke=\"green\" "
-      "stroke-dasharray=\"20 20\"/>";
+      "<path stroke=\"green\" stroke-dasharray=\"20 20\" d=\"";
 
     auto print_seg = [](const Segment &s) {
         std::cout << "M" << s.p.x << " " << -s.p.y
                   << "L" << s.q.x << " " << -s.q.y << "\n";
     };
+
+    Segment xaxis {{-2 * d_x, 0}, {2 * d_x, 0}};
+    Segment yaxis {{0, -2 * d_y}, {0, 2 * d_y}};
+    print_seg(xaxis);
+    print_seg(yaxis);
+    std::cout << "\"/>";
 
     std::cout << "<path fill=\"none\" stroke=\"black\" "
                  "stroke-linecap=\"round\"  d=\"";
@@ -130,7 +135,7 @@ int main(int argc, char **argv) {
     std::cout << "\"/>";
 
     std::vector<Segment> segs;
-    std::cout << "<path fill=\"none\" stroke=\"blue\" "
+    std::cout << "<path fill=\"none\" stroke=\"blue\" stroke-opacity=\".8\" "
                  "stroke-linecap=\"round\"  d=\"";
     xyhatch(h, s, print_seg);
     std::cout << "\"/>";
