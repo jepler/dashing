@@ -176,7 +176,6 @@ struct HatchPattern {
             auto i = line.find(";");
             if(i != line.npos) line.erase(i, line.npos);
             boost::algorithm::trim(line);
-            boost::algorithm::trim(line);
             if(line.empty()) continue;
             if(line[0] == '*') continue;
             result.d.push_back(Dash::FromString(line, scale));
