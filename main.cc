@@ -89,12 +89,13 @@ winding_rule find_rule(const char *arg) {
 int main(int argc, char **argv) {
     auto scale = 1., jitter = 0.;
     auto rule = find_rule("odd");
-    bool bench = false;
+    bool bench = false, xit = false;
     int c;
-    while((c = getopt(argc, argv, "bs:j:r:")) > 0) {
+    while((c = getopt(argc, argv, "bxs:j:r:")) > 0) {
         switch(c) {
         case 'r': rule = find_rule(optarg); break;
         case 'b': bench = !bench; break;
+        case 'x': xit = !xit; break;
         case 's': scale = atof(optarg); break;
         case 'j': jitter = atof(optarg); break;
         default:
@@ -109,6 +110,8 @@ int main(int argc, char **argv) {
 
     auto h = HatchPattern::FromFile(patfile, scale);
     auto s = SegmentsFromFile(segfile, jitter);
+
+    if(xit) return 0;
 
     if(bench) {
         int nseg = 0;
