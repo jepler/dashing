@@ -151,7 +151,6 @@ void uvspans(const Dash &pattern, std::vector<Segment> && segments, Cb cb, std::
             segments_begin ++;
         }
 
-        //std::cerr << "v=" << v << " heap size=" << active.size() << "\n";
         for(const auto &s : boost::make_iterator_range(heap_begin, heap_end)) {
             auto du = s.q.x - s.p.x;
             auto dv = s.q.y - s.p.y;
