@@ -127,7 +127,7 @@ void uvspans(const Dash &pattern, std::vector<Segment> && segments, Cb cb, std::
     auto vstart = intfloor(segments.front().p.y);
     auto vend = intceil(std::max_element(segments.begin(), segments.end(), 
                 [](const Segment &a, const Segment &b) {
-                        return a.p.y < b.p.y; // sort in increasing q.y;
+                        return a.q.y < b.q.y; // sort in increasing q.y;
                 })->q.y);
 
     // sweep-line algorithm to intersects spans with segments
