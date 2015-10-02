@@ -65,11 +65,17 @@ struct Dash {
     static Dash FromString(const std::string &line, double scale);
 };
 
-struct Segment { Point p, q; };
+struct Segment { Point p, q; bool swapped; };
+struct Intersection { double u; bool positive; };
+inline bool operator<(const Intersection &a, const Intersection &b)
+{
+    return a.u < b.u;
+}
 
 // "sort" a segment so that its first component has the lower y-value
 inline void ysort(Segment &s) {
     if(s.p.y < s.q.y) return;
+    s.swapped = ! s.swapped;
     std::swap(s.p, s.q);
 }
 
@@ -104,8 +110,8 @@ void uvdraw(const Dash &pattern, double v, double u1, double u2, Cb cb) {
     }
 }
 
-template<class Cb>
-void uvspans(const Dash &pattern, std::vector<Segment> && segments, Cb cb, std::vector<double> &uu) {
+template<class Cb, class Wr>
+void uvspans(const Dash &pattern, std::vector<Segment> && segments, Cb cb, std::vector<Intersection> &uu, Wr wr) {
     if(segments.empty()) return; // no segments
 
     for(auto &s : segments) ysort(s);
@@ -154,13 +160,17 @@ void uvspans(const Dash &pattern, std::vector<Segment> && segments, Cb cb, std::
         for(const auto &s : boost::make_iterator_range(heap_begin, heap_end)) {
             auto du = s.q.x - s.p.x;
             auto dv = s.q.y - s.p.y;
-            if(dv) uu.push_back(s.p.x + du * (v - s.p.y) / dv);
-            else { uu.push_back(s.p.x); uu.push_back(s.q.x); }
+            assert(dv);
+            if(dv) uu.push_back(
+                    Intersection{s.p.x + du * (v - s.p.y) / dv,s.swapped});
         }
-        assert(uu.size() % 2 == 0);
         std::sort(uu.begin(), uu.end());
-        for(size_t i=0; i<uu.size(); i+= 2) {
-            uvdraw(pattern, v, uu[i], uu[i+1], cb);
+        int winding = 0;
+        double old_u = -std::numeric_limits<double>::infinity();
+        for(const auto &isect : uu) {
+            if(wr(winding)) uvdraw(pattern, v, old_u, isect.u, cb);
+            winding += 2*isect.positive - 1;
+            old_u = isect.u;
         }
     }
 }
@@ -188,31 +198,32 @@ struct HatchPattern {
     }
 };
 
-template<class It, class Cb>
-void xyhatch(const Dash &pattern, It start, It end, Cb cb, std::vector<Segment> &uvsegments, std::vector<double> &uu) {
+template<class It, class Cb, class Wr>
+void xyhatch(const Dash &pattern, It start, It end, Cb cb, std::vector<Segment> &uvsegments, std::vector<Intersection> &uu, Wr wr) {
     uvsegments.clear();
+    bool swapped = pattern.tf.determinant() < 0;
     std::transform(start, end, std::back_inserter(uvsegments),
         [&](const Segment &s)
-        { return Segment{s.p * pattern.tf, s.q * pattern.tf };
+        { return Segment{s.p * pattern.tf, s.q * pattern.tf, swapped != s.swapped };
     });
     uvspans(pattern, std::move(uvsegments), [&](double v, double u1, double u2) {
         Point p{u1, v}, q{u2, v};
-        Segment xy{ p * pattern.tr, q * pattern.tr };
+        Segment xy{ p * pattern.tr, q * pattern.tr, false };
         cb(xy);
-    }, uu);
+    }, uu, wr);
 }
 
-template<class It, class Cb>
-void xyhatch(const HatchPattern &pattern, It start, It end, Cb cb) {
+template<class It, class Cb, class Wr>
+void xyhatch(const HatchPattern &pattern, It start, It end, Cb cb, Wr wr) {
     std::vector<Segment> uvsegments;
-    std::vector<double> uu;
+    std::vector<Intersection> uu;
     uu.reserve(8);
-    for(const auto &i : pattern.d) xyhatch(i, start, end, cb, uvsegments, uu);
+    for(const auto &i : pattern.d) xyhatch(i, start, end, cb, uvsegments, uu, wr);
 }
 
-template<class C, class Cb>
-void xyhatch(const HatchPattern &pattern, const C &c, Cb cb) {
-    xyhatch(pattern, c.begin(), c.end(), cb);
+template<class C, class Cb, class Wr>
+void xyhatch(const HatchPattern &pattern, const C &c, Cb cb, Wr wr) {
+    xyhatch(pattern, c.begin(), c.end(), cb, wr);
 }
 
 }

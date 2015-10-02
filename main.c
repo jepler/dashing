@@ -45,11 +45,11 @@ std::vector<Segment> SegmentsFromFile(std::istream &fi, double jitter) {
         if(numbers.size() < 6)
             throw std::invalid_argument("too few values in segment line");
         for(size_t i=0; i<numbers.size() - 3 ; i += 2) {
-            Segment s{{numbers[i], numbers[i+1]}, {numbers[i+2], numbers[i+3]}};
+            Segment s{{numbers[i], numbers[i+1]}, {numbers[i+2], numbers[i+3]}, false};
             result.push_back(s);
         }
         int i = numbers.size();
-        Segment s{{numbers[0], numbers[1]}, {numbers[i-2], numbers[i-1]}};
+        Segment s{{numbers[i-2], numbers[i-1]}, {numbers[0], numbers[1]}, false};
         result.push_back(s);
     }
     return result;
@@ -60,29 +60,49 @@ std::vector<Segment> SegmentsFromFile(const char *filename, double jitter) {
     return SegmentsFromFile(fi, jitter);
 }
 
-void usage(const char *argv0) {
+const char *argv0 = "dashing";
+
+#ifdef __GNUC__
+void usage() __attribute__((noreturn));
+#endif
+
+void usage() {
     fprintf(stderr,
-        "Usage: %s [-b] [-s scale] [-j jitter] patfile segfile\n",
+        "Usage: %s [-b] [-s scale] [-j jitter] [-r rulename] patfile segfile\n",
         argv0);
     exit(1);
 }
 
+typedef bool(*winding_rule)(int);
+
+winding_rule find_rule(const char *arg) {
+    if(!strcmp(arg, "odd")) return [](int i) { return i % 2 != 0; };
+    if(!strcmp(arg, "nonzero")) return [](int i) { return i != 0; };
+    if(!strcmp(arg, "positive")) return [](int i) { return i > 0; };
+    if(!strcmp(arg, "negative")) return [](int i) { return i < 0; };
+    if(!strcmp(arg, "abs_geq_two")) return [](int i) { return abs(i) >= 2; };
+    fprintf(stderr, "Unrecognized winding rule '%s'\n", arg);
+    fprintf(stderr, "Rules are: odd nonzero positive negative abs_geq_two\n");
+    usage();
+}
 
 int main(int argc, char **argv) {
     auto scale = 1., jitter = 0.;
+    auto rule = find_rule("odd");
     bool bench = false;
     int c;
-    while((c = getopt(argc, argv, "bs:j:")) > 0) {
+    while((c = getopt(argc, argv, "bs:j:r:")) > 0) {
         switch(c) {
+        case 'r': rule = find_rule(optarg); break;
         case 'b': bench = !bench; break;
         case 's': scale = atof(optarg); break;
         case 'j': jitter = atof(optarg); break;
         default:
-            usage(argv[0]);
+            usage();
         }
     }
     auto nargs = argc - optind;
-    if(nargs != 2) usage(argv[0]);
+    if(nargs != 2) usage();
 
     auto patfile = argv[optind];
     auto segfile = argv[optind+1];
@@ -93,7 +113,7 @@ int main(int argc, char **argv) {
     if(bench) {
         int nseg = 0;
         auto print_seg = [&nseg](const Segment &s) { (void)s; nseg ++; };
-        xyhatch(h, s, print_seg);
+        xyhatch(h, s, print_seg, rule);
         std::cout << nseg << "\n";
         return 0;
     }
@@ -123,8 +143,8 @@ int main(int argc, char **argv) {
                   << "L" << s.q.x << " " << -s.q.y << "\n";
     };
 
-    Segment xaxis {{-2 * d_x, 0}, {2 * d_x, 0}};
-    Segment yaxis {{0, -2 * d_y}, {0, 2 * d_y}};
+    Segment xaxis {{-2 * d_x, 0}, {2 * d_x, 0}, false};
+    Segment yaxis {{0, -2 * d_y}, {0, 2 * d_y}, false};
     print_seg(xaxis);
     print_seg(yaxis);
     std::cout << "\"/>";
@@ -137,7 +157,7 @@ int main(int argc, char **argv) {
     std::vector<Segment> segs;
     std::cout << "<path fill=\"none\" stroke=\"blue\" stroke-opacity=\".8\" "
                  "stroke-linecap=\"round\"  d=\"";
-    xyhatch(h, s, print_seg);
+    xyhatch(h, s, print_seg, rule);
     std::cout << "\"/>";
 
     std::cout << "</svg>";
