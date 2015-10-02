@@ -25,7 +25,6 @@ freely, subject to the following restrictions:
 #include <cassert>
 #include <vector>
 #include <string>
-#include <sstream>
 #include <fstream>
 #include <stdexcept>
 #include <boost/algorithm/string/replace.hpp>
