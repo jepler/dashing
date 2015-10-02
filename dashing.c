@@ -12,7 +12,7 @@ std::vector<double> parse_numbers(std::string line) {
 }
 
 PSMatrix PSMatrix::inverse() const {
-    auto i = 1. / (a * d - b * c);
+    auto i = 1. / determinant();
     return PSMatrix{d*i, -b*i, -c*i, a*i, i*(c*f-e*d), i*(b*e-a*f)};
 }
 

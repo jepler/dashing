@@ -38,6 +38,7 @@ struct PSMatrix {
     double a, b, c, d, e, f;
 
     PSMatrix inverse() const;
+    double determinant() const { return a * d - b * c; }
 };
 
 PSMatrix Translation(double x, double y);
