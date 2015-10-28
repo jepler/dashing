@@ -6,35 +6,25 @@ On my core i5, it runs at over 1 million dashes per second.
 
 ![Example image](data/sf.png)
 
-## API
-All items are in `namespace dashing`.  Most are in `dashing.h`, except as noted.
+`xyhatch(const HatchPattern&, It start, It end, Cb cb, Wr wr)`:
+    Iterators `start`..`end` define a range of segments, which must define a set of closed contours.
+    The winding rule `wr` defines which regions are in the interior of the contours.
+    For each dash or dot in the resulting hatch, `cb` is called with the output segment.
 
-`struct Point`:
-    Has double-precision x and y coordinates.
-
-`struct Segment`:
-    A line segment defined by two endpoints.  Segments are used both to
-    define the boundary of the region to hatch, and to express the
-    coordinates of the individual dots and dashes in the resulting hatch.
-
-`HatchPattern::FromFile(std::istream fi, double scale)`:
-    Read an autocad-style hatch pattern file from an opened stream
-
-`HatchPattern::FromFile(const char *filename, double scale)`:
-    Read an autocad-style hatch pattern from the named file
-
-`xyhatch(const HatchPattern&, It start, It end, Cb cb)`:
-    Iterators start..end define a range of segments, which must define a
-    set of closed contours.  For each dash or dot in the resulting hatch, Cb
-    is called with the output segment.
-
-`xyhatch(const HatchPattern&, const C &segments, Cb cb)`:
+`xyhatch(const HatchPattern&, const C &segments, Cb cb, Wr wr)`:
     The container C holds segments which must define a set of closed
-    contours.  For each dash or dot in the resulting hatch, Cb is called
-    with the output segment.
+    contours.
+    The winding rule `wr` defines which regions are in the interior of the contours.
+    For each dash or dot in the resulting hatch, `cb` is called with the output segment.
 
 `parse_numbers(std::string line)`: Read a comma and/or space-separated
     sequence of numbers into a vector
+
+Useful winding rules include:
+ * `[](int i) { return i % 2 != 0; }`, the even-odd winding rule
+ * `[](int i) { return i != 0;}`, the non-zero winding rule
+ * `[](int i) { return i > 0;}`, the greater-than-zero winding rule
+but any predicate of a single integer may be used.
 
 Other items in the header files are implementation details.
 
@@ -58,3 +48,5 @@ It accepts several commandline parameters:
     -j: Apply a jitter to all coordinaes in the segment list file
 
     -s: scale the dash pattern file by a given factor
+    
+    -r rulename: select the given rulename, one of the following: odd nonzero positive negative abs_geq_two
