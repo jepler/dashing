@@ -20,8 +20,8 @@ freely, subject to the following restrictions:
 
 // demo and benchmark program for dashing
 
-#include "dashing.h"
-#include "parse_numbers.h"
+#include "dashing.hh"
+#include "parse_numbers.hh"
 #include <iostream>
 #include <boost/random.hpp>
 #include <boost/random/random_device.hpp>

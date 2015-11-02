@@ -1,5 +1,5 @@
-#include "parse_numbers.h"
-#include "dashing.h"
+#include "parse_numbers.hh"
+#include "dashing.hh"
 namespace dashing
 {
 std::vector<double> parse_numbers(std::string line) {
