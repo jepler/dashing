@@ -88,7 +88,7 @@ inline double pythonmod(double a, double b) {
     return r;
 }
 
-inline double utoidx(const Dash &d, double u, double &o) {
+inline size_t utoidx(const Dash &d, double u, double &o) {
     u = pythonmod(u, d.sum.back());
     for(size_t i = 1; i != d.sum.size(); i++) {
         if(u < d.sum[i]) { o = u - d.sum[i-1]; return i-1; }
