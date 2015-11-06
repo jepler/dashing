@@ -106,7 +106,8 @@ void uvdraw(const Dash &pattern, double v, double u1, double u2, Cb cb) {
         if(pi >= 0) cb(v, u, std::min(u2, u+pi-o));
         u += fabs(pi)-o;
         o = 0;
-        i = pythonmod(i+1, pattern.dash.size());
+        i = i + 1;
+        if(i == pattern.dash.size()) i = 0;
     }
 }
 
