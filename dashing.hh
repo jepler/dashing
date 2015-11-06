@@ -217,6 +217,7 @@ void xyhatch(const Dash &pattern, It start, It end, Cb cb, std::vector<Segment> 
 template<class It, class Cb, class Wr>
 void xyhatch(const HatchPattern &pattern, It start, It end, Cb cb, Wr wr) {
     std::vector<Segment> uvsegments;
+    uvsegments.reserve(end-start);
     std::vector<Intersection> uu;
     uu.reserve(8);
     for(const auto &i : pattern.d) xyhatch(i, start, end, cb, uvsegments, uu, wr);
