@@ -102,7 +102,7 @@ void uvdraw(const Dash &pattern, double v, double u1, double u2, Cb cb) {
     double o;
     auto i = utoidx(pattern, u1, o);
     for(auto u = u1; u < u2;) {
-        auto pi = pattern.dash[i];
+        const auto &pi = pattern.dash[i];
         if(pi >= 0) { cb(v, u, std::min(u2, u+pi-o)); u += pi-o; }
         else { u -= pi+o; }
         o = 0;
