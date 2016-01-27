@@ -2,7 +2,12 @@
 
 License: permissive (zlib); see source files for additional details.
 
-On my core i5, it runs at over 1 million dashes per second.
+On a i5-3320M in benchmark mode, it runs at over 175 million dashes per second:
+```
+$ time ./dashing -b -s .01 data/HWOOD6E1.pat  data/sf.seg
+111430525
+user    0m0.616s
+```
 
 ![Example image](data/sf.png)
 
