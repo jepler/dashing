@@ -101,11 +101,15 @@ void uvdraw(const Dash &pattern, double v, double u1, double u2, Cb cb) {
     if(pattern.dash.empty()) { cb(v, u1, u2); return;  }
     double o;
     auto i = utoidx(pattern, u1, o);
+    const auto &pi = pattern.dash[i];
+    if(pi >= 0) { cb(v, u1, std::min(u2, u1+pi-o)); u1 += pi-o; }
+    else { u1 -= pi+o; }
+    i = i + 1;
+    if(i == pattern.dash.size()) i = 0;
     for(auto u = u1; u < u2;) {
         const auto &pi = pattern.dash[i];
-        if(pi >= 0) { cb(v, u, std::min(u2, u+pi-o)); u += pi-o; }
-        else { u -= pi+o; }
-        o = 0;
+        if(pi >= 0) { cb(v, u, std::min(u2, u+pi)); u += pi; }
+        else { u -= pi; }
         i = i + 1;
         if(i == pattern.dash.size()) i = 0;
     }
