@@ -51,7 +51,7 @@ It accepts several commandline parameters:
     -b: Benchmark mode: print only the number of dashes that would have been
         generated
 
-    -j: Apply a jitter to all coordinaes in the segment list file
+    -j: Apply a jitter to all coordinates in the segment list file
 
     -s: scale the dash pattern file by a given factor
     
