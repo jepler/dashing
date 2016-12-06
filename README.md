@@ -29,6 +29,7 @@ Useful winding rules include:
  * `[](int i) { return i % 2 != 0; }`, the even-odd winding rule
  * `[](int i) { return i != 0;}`, the non-zero winding rule
  * `[](int i) { return i > 0;}`, the greater-than-zero winding rule
+ 
 but any predicate of a single integer may be used.
 
 Other items in the header files are implementation details.
