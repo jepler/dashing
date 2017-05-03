@@ -11,6 +11,15 @@ user    0m0.616s
 
 ![Example image](data/sf.png)
 
+# Development status
+
+The author (@jepler) is not actively using or developing this project.
+Issues and pull requests are not likely to be acted on.
+I would be interested in passing this project to a new maintainer.
+
+# Usage
+## API
+
 `xyhatch(const HatchPattern&, It start, It end, Cb cb, Wr wr)`:
     Iterators `start`..`end` define a range of segments, which must define a set of closed contours.
     The winding rule `wr` defines which regions are in the interior of the contours.
