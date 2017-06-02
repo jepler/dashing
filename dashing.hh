@@ -47,9 +47,8 @@ PSMatrix YScale(double ys);
 
 struct Point { double x, y; };
 inline Point operator*(const Point &p, const PSMatrix &m) {
-    Point r{ p.x*m.a + p.y*m.c + m.e,
+    return Point{ p.x*m.a + p.y*m.c + m.e,
                   p.x*m.b + p.y*m.d + m.f };
-    return r;
 }
 
 PSMatrix operator*(const PSMatrix &m1, const PSMatrix m2);
