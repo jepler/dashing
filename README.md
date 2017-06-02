@@ -31,8 +31,18 @@ I would be interested in passing this project to a new maintainer.
     The winding rule `wr` defines which regions are in the interior of the contours.
     For each dash or dot in the resulting hatch, `cb` is called with the output segment.
 
-`parse_numbers(std::string line)`: Read a comma and/or space-separated
+`xyhatch(const HatchPattern&, const C &segments, Cb cb, const char \*wr)`:
+    The container C holds segments which must define a set of closed
+    contours.
+    The winding rule `wr` defines which regions are in the interior of the contours.
+    For each dash or dot in the resulting hatch, `cb` is called with the output segment.
+
+`HatchPattern::FromFile`: Read a hatch pattern from a file.
+
+`parse\_numbers(std::string line)`: Read a comma and/or space-separated
     sequence of numbers into a vector
+
+`SegmentsFromFile`, `ContoursFromFile`, `ContourToSegments`, `ContoursToSegments`: Read and convert segments and contours
 
 Useful winding rules include:
  * `[](int i) { return i % 2 != 0; }`, the even-odd winding rule
