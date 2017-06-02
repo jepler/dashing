@@ -50,6 +50,18 @@ inline Point operator*(const Point &p, const PSMatrix &m) {
     return Point{ p.x*m.a + p.y*m.c + m.e,
                   p.x*m.b + p.y*m.d + m.f };
 }
+inline Point operator*(const Point &p, double d)
+{
+    return Point{ p.x * d, p.y * d };
+}
+inline Point operator*(double d, const Point &p)
+{
+    return Point{ p.x * d, p.y * d };
+}
+inline Point operator+(const Point &p, const Point &q)
+{
+    return Point{ p.x + q.x, p.y * q.y };
+}
 
 PSMatrix operator*(const PSMatrix &m1, const PSMatrix m2);
 
