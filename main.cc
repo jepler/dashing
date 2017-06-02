@@ -40,12 +40,18 @@ void usage() {
 
 typedef bool(*winding_rule)(int);
 
-winding_rule find_rule(const char *arg) {
-    if(!strcmp(arg, "odd")) return [](int i) { return i % 2 != 0; };
-    if(!strcmp(arg, "nonzero")) return [](int i) { return i != 0; };
-    if(!strcmp(arg, "positive")) return [](int i) { return i > 0; };
-    if(!strcmp(arg, "negative")) return [](int i) { return i < 0; };
-    if(!strcmp(arg, "abs_geq_two")) return [](int i) { return abs(i) >= 2; };
+template<class C, class Cb>
+void xyhatch(const HatchPattern &pattern, const C &c, Cb cb, const char *arg) {
+    if(!strcmp(arg, "odd"))
+        return xyhatch(pattern, c, cb, [](int i) { return i % 2 != 0; });
+    if(!strcmp(arg, "nonzero"))
+        return xyhatch(pattern, c, cb, [](int i) { return i != 0; });
+    if(!strcmp(arg, "positive"))
+        return xyhatch(pattern, c, cb, [](int i) { return i > 0; });
+    if(!strcmp(arg, "negative"))
+        return xyhatch(pattern, c, cb, [](int i) { return i < 0; });
+    if(!strcmp(arg, "abs_geq_two"))
+        return xyhatch(pattern, c, cb, [](int i) { return abs(i) >= 2; });
     fprintf(stderr, "Unrecognized winding rule '%s'\n", arg);
     fprintf(stderr, "Rules are: odd nonzero positive negative abs_geq_two\n");
     usage();
@@ -53,12 +59,12 @@ winding_rule find_rule(const char *arg) {
 
 int main(int argc, char **argv) {
     auto scale = 1., jitter = 0.;
-    auto rule = find_rule("odd");
+    auto rule = "odd";
     bool bench = false, xit = false;
     int c;
     while((c = getopt(argc, argv, "bxs:j:r:")) > 0) {
         switch(c) {
-        case 'r': rule = find_rule(optarg); break;
+        case 'r': rule = optarg; break;
         case 'b': bench = !bench; break;
         case 'x': xit = !xit; break;
         case 's': scale = atof(optarg); break;
@@ -81,7 +87,7 @@ int main(int argc, char **argv) {
     if(bench) {
         int nseg = 0;
         auto print_seg = [&nseg](const Segment &s) { (void)s; nseg ++; };
-        xyhatch(h, s, print_seg, rule);
+        xyhatch(h, s, print_seg, [](int i) { return i != 0; } );
         std::cout << nseg << "\n";
         return 0;
     }
