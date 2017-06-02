@@ -21,44 +21,9 @@ freely, subject to the following restrictions:
 // demo and benchmark program for dashing
 
 #include "dashing.hh"
-#include "parse_numbers.hh"
-#include <iostream>
-#include <boost/random.hpp>
-#include <boost/random/random_device.hpp>
+#include "contours_and_segments.hh"
 
 using namespace dashing;
-
-std::vector<Segment> SegmentsFromFile(std::istream &fi, double jitter) {
-    static boost::random_device urandom;
-    static boost::taus88 gen(urandom);
-    boost::uniform_real<> dist(-jitter/2, jitter/2);
-    boost::variate_generator<boost::taus88&, boost::uniform_real<> >
-            random(gen, dist); 
-    std::vector<Segment> result;
-    std::string line;
-    while(getline(fi, line)) {
-        auto numbers = parse_numbers(line);
-        if(jitter)
-            for(auto & n : numbers) n += random();
-        if(numbers.size() % 2 != 0)
-            throw std::invalid_argument("odd number of values in segment line");
-        if(numbers.size() < 6)
-            throw std::invalid_argument("too few values in segment line");
-        for(size_t i=0; i<numbers.size() - 3 ; i += 2) {
-            Segment s{{numbers[i], numbers[i+1]}, {numbers[i+2], numbers[i+3]}, false};
-            result.push_back(s);
-        }
-        int i = numbers.size();
-        Segment s{{numbers[i-2], numbers[i-1]}, {numbers[0], numbers[1]}, false};
-        result.push_back(s);
-    }
-    return result;
-}
-
-std::vector<Segment> SegmentsFromFile(const char *filename, double jitter) {
-    std::fstream fi(filename);
-    return SegmentsFromFile(fi, jitter);
-}
 
 const char *argv0 = "dashing";
 
