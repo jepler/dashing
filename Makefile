@@ -14,9 +14,9 @@ dashing%: main%.o dashing%.o
 HEADERS := $(wildcard *.hh)
 
 default: gldashing
-gldashing: glmain.o dashing.o
+gldashing: glmain.o dashing.o glsetup.o
 	g++ -o $@ $^ -lSDL2 -lGLEW -lGL -lrt
-gldashing%: glmain%.o dashing%.o
+gldashing%: glmain%.o dashing%.o glsetup%.o
 	g++ -o $@ $^ -lSDL2 -lGLEW -lGL -lrt
 
 %.o: %.cc $(HEADERS)

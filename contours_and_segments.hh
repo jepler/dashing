@@ -1,3 +1,5 @@
+#pragma once
+
 #include "dashing.hh"
 #include "parse_numbers.hh"
 #include <random>
@@ -10,7 +12,7 @@ typedef std::vector<Segment> Segments;
 typedef std::vector<Point> Contour;
 typedef std::vector<Contour> Contours;
 
-void ContourToSegments(Segments &dest,
+inline void ContourToSegments(Segments &dest,
         /* EXPLICIT COPY */ Contour src,
         double jitter = 0)
 {
@@ -32,7 +34,7 @@ void ContourToSegments(Segments &dest,
     dest.emplace_back(Segment{src[i-1], src[0], false});
 }
 
-void ContoursToSegments(Segments &dest, Contours const &src, double jitter=0)
+inline void ContoursToSegments(Segments &dest, Contours const &src, double jitter=0)
 {
     dest.clear();
 
@@ -42,7 +44,7 @@ void ContoursToSegments(Segments &dest, Contours const &src, double jitter=0)
     }
 }
 
-Contours ContoursFromFile(std::istream &fi)
+inline Contours ContoursFromFile(std::istream &fi)
 {
     auto result = Contours{};
     auto line = std::string{};
@@ -62,20 +64,20 @@ Contours ContoursFromFile(std::istream &fi)
     return result;
 }
 
-Contours ContoursFromFile(const char *filename)
+inline Contours ContoursFromFile(const char *filename)
 {
     std::fstream fi(filename);
     return ContoursFromFile(fi);
 }
 
-Segments SegmentsFromFile(std::istream &fi, double jitter) {
+inline Segments SegmentsFromFile(std::istream &fi, double jitter) {
     auto && contours = ContoursFromFile(fi);
     auto result = Segments{};
     ContoursToSegments(result, contours, jitter);
     return result;
 }
 
-std::vector<Segment> SegmentsFromFile(const char *filename, double jitter) {
+inline std::vector<Segment> SegmentsFromFile(const char *filename, double jitter) {
     std::fstream fi(filename);
     return SegmentsFromFile(fi, jitter);
 }

@@ -23,13 +23,11 @@ freely, subject to the following restrictions:
 #include "dashing.hh"
 #include "contours_and_segments.hh"
 
-#include <GL/glew.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/type_precision.hpp>
-#include <glm/gtx/transform.hpp>
 #include <SDL2/SDL.h>
-
+#include "gldashing.hh"
 using namespace dashing;
+
+AppState st;
 
 const char *argv0 = "dashing";
 
@@ -43,18 +41,6 @@ void usage() {
         argv0);
     exit(1);
 }
-
-struct AppState
-{
-    double jitter, scale;
-    const char *rule;
-    GLint attribute_aPos, attribute_aColor, uniform_uXf;
-    glm::fmat4x4 mat;
-    Contours c;
-    HatchPattern h;
-};
-
-AppState st;
 
 template<class C, class Cb>
 void xyhatch(const HatchPattern &pattern, const C &c, Cb cb, const char *arg) {
@@ -73,80 +59,102 @@ void xyhatch(const HatchPattern &pattern, const C &c, Cb cb, const char *arg) {
     usage();
 }
 
-#define SHADER_SOURCE(...) #__VA_ARGS__
-void setup()
-{
-    glewInit();
 
-    GLint compile_ok = GL_FALSE, link_ok = GL_FALSE;
 
-    GLuint vs = glCreateShader(GL_VERTEX_SHADER);
-    const char *vs_source =
-        "#version 300 es\n"
-        "#ifdef GL_FRAGMENT_PRECISION_HIGH\n"
-        "# define maxfragp highp\n"
-        "#else\n"
-        "# define maxfragp medp\n"
-        "#endif\n"
-        SHADER_SOURCE(
-            uniform maxfragp mat4 uXf;
-            in maxfragp vec2 aPos;
-            in mediump vec3 aColor;
-            out vec4 vColor;
-            void main(void)
-            {
-                gl_Position = uXf * vec4(aPos, 0., 1.);
-                vColor = vec4(aColor, 1.);
+template<class Cb, class Wr>
+void glspans(std::vector<Segment> && segments, Cb cb, std::vector<Intersection> &uu, Wr wr) {
+    if(segments.empty()) return; // no segments
+
+    for(auto &s : segments) ysort(s);
+    std::sort(segments.begin(), segments.end(),
+        [](const Segment &a, const Segment &b) {
+            return a.p.y < b.p.y; // sort in increasing p.y
+        });
+
+    // we want to maintain the heap condition in such a way that we can always
+    // quickly pop items that our span has moved past.
+    // C++ heaps are max-heaps, so we need a decreasing sort.
+    auto heapcmp = [](const Segment &a, const Segment &b) {
+            return b.q.y < a.q.y; // sort in decreasing q.y;
+        };
+
+    auto segments_begin = segments.begin();
+    auto heap_begin = segments.begin(), heap_end = segments.begin();
+
+    auto vstart = intfloor(segments.front().p.y);
+    auto vend = intceil(std::max_element(segments.begin(), segments.end(), 
+                [](const Segment &a, const Segment &b) {
+                        return a.q.y < b.q.y; // sort in increasing q.y;
+                })->q.y);
+
+    // sweep-line algorithm to intersects spans with segments
+    // "active" holds segments that may intersect with this span;
+    // when v moves below an active segment, drop it from the active heap.
+    // when v moves into a remaining segment, move it from segments to active.
+    for(auto v = vstart; v != vend; v++) {
+        uu.clear();
+
+        while(heap_begin != heap_end && heap_begin->q.y < v)
+        {
+            std::pop_heap(heap_begin, heap_end, heapcmp);
+            heap_end --;
+        }
+        while(segments_begin != segments.end() && segments_begin->p.y < v) {
+            const auto &s = *segments_begin;
+            if(s.q.y >= v) {
+                *heap_end++ = s;
+                std::push_heap(heap_begin, heap_end, heapcmp);
             }
-        );
-    printf("shader source = \n%s\n", vs_source);
-    glShaderSource(vs, 1, &vs_source, NULL);
-    glCompileShader(vs);
-    glGetShaderiv(vs, GL_COMPILE_STATUS, &compile_ok);
-    if (!compile_ok) {
-        std::cerr << "Error in vertex shader\n";
-	abort();
+            segments_begin ++;
+        }
+
+        for(const auto &s : boost::make_iterator_range(heap_begin, heap_end)) {
+            auto du = s.q.x - s.p.x;
+            auto dv = s.q.y - s.p.y;
+            assert(dv);
+            if(dv) uu.push_back(
+                    Intersection{s.p.x + du * (v - s.p.y) / dv,s.swapped});
+        }
+        std::sort(uu.begin(), uu.end());
+        int winding = 0;
+        double old_u = -std::numeric_limits<double>::infinity();
+        for(const auto &isect : uu) {
+            if(wr(winding)) cb(v, old_u, isect.u);
+            winding += 2*isect.positive - 1;
+            old_u = isect.u;
+        }
     }
+}
 
-    GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
-    const char *fs_source =
-        "#version 300 es\n"
-        SHADER_SOURCE(
-            in mediump vec4 vColor;
-            out mediump vec4 fragColor;
-            void main(void)
-            {
-                fragColor = vColor;
-            }
-        );
-    printf("shader source = \n%s\n", fs_source);
-    glShaderSource(fs, 1, &fs_source, NULL);
-    glCompileShader(fs);
-    glGetShaderiv(fs, GL_COMPILE_STATUS, &compile_ok);
-    if (!compile_ok) {
-        std::cerr << "Error in fragment shader\n";
-	abort();
-    }
+template<class It, class Cb>
+void glhatch(int i, const Dash &pattern, It start, It end, Cb cb, std::vector<Segment> &uvsegments, std::vector<Intersection> &uu) {
+    uvsegments.clear();
+    bool swapped = pattern.tf.determinant() < 0;
+    std::transform(start, end, std::back_inserter(uvsegments),
+        [&](const Segment &s)
+        { return Segment{s.p * pattern.tf, s.q * pattern.tf, swapped != s.swapped };
+    });
+    auto recip = 1./pattern.sum.back();
+    glspans(std::move(uvsegments), [&](double v, double u1, double u2) {
+        auto p = Point{u1, v} * pattern.tr;
+        auto q = Point{u2, v} * pattern.tr;
+        cb(i, p.x, p.y, u1*recip, q.x, q.y, u2*recip);
+    }, uu, [](int i) { return !!i; } );
+}
 
-    GLuint program = glCreateProgram();
-    glAttachShader(program, vs);
-    glAttachShader(program, fs);
-    glLinkProgram(program);
-    glGetProgramiv(program, GL_LINK_STATUS, &link_ok);
-    if (!link_ok) {
-        std::cerr << "Error in glLinkProgram\n";
-        abort();
-    }
+template<class It, class Cb>
+void glhatch(const HatchPattern &pattern, It start, It end, Cb cb) {
+    std::vector<Segment> uvsegments;
+    uvsegments.reserve(end-start);
+    std::vector<Intersection> uu;
+    uu.reserve(8);
+    for(size_t i=0; i<pattern.d.size(); i++)
+        glhatch(i, pattern.d[i], start, end, cb, uvsegments, uu);
+}
 
-    glUseProgram(program);
-    glClearColor(1., 1., 1., 1.);
-
-    st.attribute_aPos = glGetAttribLocation(program, "aPos");
-    st.attribute_aColor = glGetAttribLocation(program, "aColor");
-    st.uniform_uXf = glGetUniformLocation(program, "uXf");
-
-    glEnableVertexAttribArray(st.attribute_aPos);
-    glUniformMatrix4fv(st.uniform_uXf, 1, false, &st.mat[0][0]);
+template<class C, class Cb>
+void glhatch(const HatchPattern &pattern, const C &c, Cb cb) {
+    glhatch(pattern, std::begin(c), std::end(c), cb);
 }
 
 size_t render(SDL_Window *window __attribute__((unused)))
@@ -156,19 +164,25 @@ size_t render(SDL_Window *window __attribute__((unused)))
     static Segments s;
     ContoursToSegments(s, st.c, st.jitter);
 
-    static std::vector<Point> p;
+    static std::vector<float> p;
     p.clear();
     for(auto && si : s)
     {
-        p.push_back(si.p);
-        p.push_back(si.q);
+        p.push_back(si.p.x);
+        p.push_back(si.p.y);
+        p.push_back(0.f);
+        p.push_back(-1);
+        p.push_back(si.q.x);
+        p.push_back(si.q.y);
+        p.push_back(0.f);
+        p.push_back(-1);
     }
 
     // draw outline of shape
     glVertexAttrib3f(st.attribute_aColor, 0., 0., 0.);
-    glVertexAttribPointer(st.attribute_aPos, 2, GL_DOUBLE, GL_FALSE, 
-            sizeof(p[0]), &p[0]);
-    glDrawArrays(GL_LINES, 0, p.size());
+    glVertexAttribPointer(st.attribute_aPos, 4, GL_FLOAT, GL_FALSE, 
+            0, &p[0]);
+    glDrawArrays(GL_LINES, 0, p.size()/4);
 
     p.clear();
     auto scale = pow(1.25, st.scale);
@@ -181,18 +195,27 @@ size_t render(SDL_Window *window __attribute__((unused)))
         i.tf = i.tf * sf;
         i.tr = sr * i.tr;
     }
-    xyhatch(h, s,
-            [](const Segment &s) { p.push_back(s.p); p.push_back(s.q); },
-            st.rule);
+
+    double frac = 1.*h.d.size();
+    glhatch(h, s, [frac](int i, double x1, double y1, double u1, double x2, double y2, double u2) {
+        p.push_back(x1);
+        p.push_back(y1);
+        p.push_back(u1);
+        p.push_back(i);
+        p.push_back(x2);
+        p.push_back(y2);
+        p.push_back(u2);
+        p.push_back(i);
+    });
 
     // draw dashes of shape
     glVertexAttrib3f(st.attribute_aColor, 0., 0., 1.);
-    glVertexAttribPointer(st.attribute_aPos, 2, GL_DOUBLE, GL_FALSE, 
-            sizeof(p[0]), &p[0]);
-    glDrawArrays(GL_LINES, 0, p.size());
+    glVertexAttribPointer(st.attribute_aPos, 4, GL_FLOAT, GL_FALSE, 
+            0, &p[0]);
+    glDrawArrays(GL_LINES, 0, p.size()/4);
     
     SDL_GL_SwapWindow(window);
-    return p.size();
+    return p.size() / 16;
 }
 
 double now()
