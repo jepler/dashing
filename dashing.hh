@@ -44,6 +44,7 @@ PSMatrix Translation(double x, double y);
 PSMatrix Rotation(double theta);
 PSMatrix XSkew(double xk);
 PSMatrix YScale(double ys);
+PSMatrix Scale(double s);
 
 struct Point { double x, y; };
 inline Point operator*(const Point &p, const PSMatrix &m) {

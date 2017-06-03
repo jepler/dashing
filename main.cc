@@ -128,7 +128,6 @@ int main(int argc, char **argv) {
     for(const auto i : s) print_seg(i);
     std::cout << "\"/>";
 
-    std::vector<Segment> segs;
     std::cout << "<path fill=\"none\" stroke=\"blue\" stroke-opacity=\".8\" "
                  "stroke-linecap=\"round\"  d=\"";
     xyhatch(h, s, print_seg, rule);

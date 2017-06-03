@@ -1,13 +1,33 @@
 .PHONY: default
 default: dashing
 
-.PHONY: bench
-bench: dashing
-	perf stat --log-fd=2 ./dashing -b -s .1 data/HWOOD6E1.pat data/sf.seg
+.PHONY: bench%
+bench%: dashing%
+	perf stat --log-fd=2 ./$< -b -s .1 data/HWOOD6E1.pat data/sf.seg
 
-dashing: main.cc dashing.cc dashing.hh parse_numbers.hh contours_and_segments.hh
-	g++ -W -Wall -O2 -g -std=c++11 $(filter %.cc, $^) -o $@ -lboost_random
-dashing-noopt: main.cc dashing.cc dashing.hh parse_numbers.hh contours_and_segments.hh
-	g++ -W -Wall -O0 -g -std=c++11 $(filter %.cc, $^) -o $@ -lboost_random
-dashing-clang: main.cc dashing.cc dashing.hh parse_numbers.hh
-	clang++ -W -Wall -O2 -g -std=c++11 $(filter %.cc, $^) -o $@ -lboost_random
+HEADERS:
+dashing: main.o dashing.o
+	g++ -W -Wall -O2 -g -std=c++11 $^ -o $@
+dashing%: main%.o dashing%.o
+	g++ -W -Wall -O2 -g -std=c++11 $^ -o $@
+
+HEADERS := $(wildcard *.hh)
+
+default: gldashing
+gldashing: glmain.o dashing.o
+	g++ -o $@ $^ -lSDL2 -lGLEW -lGL -lrt
+gldashing%: glmain%.o dashing%.o
+	g++ -o $@ $^ -lSDL2 -lGLEW -lGL -lrt
+
+%.o: %.cc $(HEADERS)
+	g++ -W -Wall -O2 -g -std=c++11 -c $< -o $@
+%-noopt.o: %.cc $(HEADERS)
+	g++ -W -Wall -O0 -g -std=c++11 -c $< -o $@
+%-clang.o: %.cc $(HEADERS)
+	clang++ -W -Wall -O0 -g -std=c++11 -c $< -o $@
+
+.PHONY: clean
+clean:
+	rm -f dashing dashing-noopt dashing-clang \
+		gldashing gldashing-noopt gldashing-clang \
+		*.o *.d

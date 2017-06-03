@@ -62,6 +62,12 @@ Contours ContoursFromFile(std::istream &fi)
     return result;
 }
 
+Contours ContoursFromFile(const char *filename)
+{
+    std::fstream fi(filename);
+    return ContoursFromFile(fi);
+}
+
 Segments SegmentsFromFile(std::istream &fi, double jitter) {
     auto && contours = ContoursFromFile(fi);
     auto result = Segments{};
