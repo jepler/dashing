@@ -83,9 +83,14 @@ void setup()
     GLuint vs = glCreateShader(GL_VERTEX_SHADER);
     const char *vs_source =
         "#version 300 es\n"
+        "#ifdef GL_FRAGMENT_PRECISION_HIGH\n"
+        "# define maxfragp highp\n"
+        "#else\n"
+        "# define maxfragp medp\n"
+        "#endif\n"
         SHADER_SOURCE(
-            uniform highp mat4 uXf;
-            in highp vec2 aPos;
+            uniform maxfragp mat4 uXf;
+            in maxfragp vec2 aPos;
             in mediump vec3 aColor;
             out vec4 vColor;
             void main(void)
@@ -107,12 +112,14 @@ void setup()
     const char *fs_source =
         "#version 300 es\n"
         SHADER_SOURCE(
-                in mediump vec4 vColor;
-                void main(void)
-                {
-                    gl_FragColor = vColor;
-                }
+            in mediump vec4 vColor;
+            out mediump vec4 fragColor;
+            void main(void)
+            {
+                fragColor = vColor;
+            }
         );
+    printf("shader source = \n%s\n", fs_source);
     glShaderSource(fs, 1, &fs_source, NULL);
     glCompileShader(fs);
     glGetShaderiv(fs, GL_COMPILE_STATUS, &compile_ok);
