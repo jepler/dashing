@@ -54,13 +54,9 @@ void setup()
             uniform mediump sampler2DArray uTex;
             void main(void) {
                 mediump float coverage =
-                    (vTexCoord.y < 0.) ? 1. :
-                        // texture(uTex, vec3(vTexCoord.x, vTexCoord.x, vTexCoord.y)).r;
-                        texture(uTex, vec3(vTexCoord.x, vTexCoord.x, vTexCoord.y)).r;
-                // coverage = max(0.1, coverage);
+                        texture(uTex, vec3(vTexCoord.x, 0, vTexCoord.y)).r;
+                coverage = (vTexCoord.y < 0.) ? 1. : coverage;
                 fragColor = vec4(vColor.rgb * coverage, coverage);
-                // fragColor = vec4(-vTexCoord.y, vTexCoord.x / 100., coverage, 1.);
-                // fragColor = vec4(mod(vTexCoord.x, 1.), vTexCoord.y, coverage, 1.);
             }
         );
     glShaderSource(fs, 1, &fs_source, NULL);
@@ -127,9 +123,6 @@ void setup()
         for(auto j=0; j<np; j++)
             glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, j, i, np, 1, 1, GL_RED, GL_FLOAT, coverage);
 
-        printf("P5\n%d 1 255\n", np);
-        for(auto j=0; j<np; j++) printf("%d ", iround(coverage[j]*255.f));
-        printf("\n");
     }
     glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT);
