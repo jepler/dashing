@@ -12,7 +12,7 @@ typedef std::vector<Contour> Contours;
 
 void ContourToSegments(Segments &dest,
         /* EXPLICIT COPY */ Contour src,
-        double jitter = 0)
+        F jitter = 0)
 {
     if(jitter)
     {
@@ -32,7 +32,7 @@ void ContourToSegments(Segments &dest,
     dest.emplace_back(Segment{src[i-1], src[0], false});
 }
 
-void ContoursToSegments(Segments &dest, Contours const &src, double jitter=0)
+void ContoursToSegments(Segments &dest, Contours const &src, F jitter=0)
 {
     dest.clear();
 
@@ -62,14 +62,14 @@ Contours ContoursFromFile(std::istream &fi)
     return result;
 }
 
-Segments SegmentsFromFile(std::istream &fi, double jitter) {
+Segments SegmentsFromFile(std::istream &fi, F jitter) {
     auto && contours = ContoursFromFile(fi);
     auto result = Segments{};
     ContoursToSegments(result, contours, jitter);
     return result;
 }
 
-std::vector<Segment> SegmentsFromFile(const char *filename, double jitter) {
+std::vector<Segment> SegmentsFromFile(const char *filename, F jitter) {
     std::fstream fi(filename);
     return SegmentsFromFile(fi, jitter);
 }

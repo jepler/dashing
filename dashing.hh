@@ -18,8 +18,7 @@ freely, subject to the following restrictions:
 3. This notice may not be removed or altered from any source distribution.
 */
 
-#ifndef DASHING_H
-#define DASHING_H
+#pragma once
 
 #include <cmath>
 #include <cassert>
@@ -30,31 +29,33 @@ freely, subject to the following restrictions:
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/algorithm/string/trim.hpp>
 
+#include "dashing_F.hh"
+
 namespace dashing
 {
 
 struct PSMatrix {
-    double a, b, c, d, e, f;
+    F a, b, c, d, e, f;
 
     PSMatrix inverse() const;
-    double determinant() const { return a * d - b * c; }
+    F determinant() const { return a * d - b * c; }
 };
 
-PSMatrix Translation(double x, double y);
-PSMatrix Rotation(double theta);
-PSMatrix XSkew(double xk);
-PSMatrix YScale(double ys);
+PSMatrix Translation(F x, F y);
+PSMatrix Rotation(F theta);
+PSMatrix XSkew(F xk);
+PSMatrix YScale(F ys);
 
-struct Point { double x, y; };
+struct Point { F x, y; };
 inline Point operator*(const Point &p, const PSMatrix &m) {
     return Point{ p.x*m.a + p.y*m.c + m.e,
                   p.x*m.b + p.y*m.d + m.f };
 }
-inline Point operator*(const Point &p, double d)
+inline Point operator*(const Point &p, F d)
 {
     return Point{ p.x * d, p.y * d };
 }
-inline Point operator*(double d, const Point &p)
+inline Point operator*(F d, const Point &p)
 {
     return Point{ p.x * d, p.y * d };
 }
@@ -67,17 +68,17 @@ PSMatrix operator*(const PSMatrix &m1, const PSMatrix m2);
 
 struct Dash {
     PSMatrix tr, tf;
-    std::vector<double> dash, sum;
+    std::vector<F> dash, sum;
 
-    Dash(double th, double x0, double y0, double dx, double dy,
-            const std::vector<double>::const_iterator dbegin,
-            const std::vector<double>::const_iterator dend);
+    Dash(F th, F x0, F y0, F dx, F dy,
+            const std::vector<F>::const_iterator dbegin,
+            const std::vector<F>::const_iterator dend);
 
-    static Dash FromString(const std::string &line, double scale);
+    static Dash FromString(const std::string &line, F scale);
 };
 
 struct Segment { Point p, q; bool swapped; };
-struct Intersection { double u; bool positive; };
+struct Intersection { F u; bool positive; };
 inline bool operator<(const Intersection &a, const Intersection &b)
 {
     return a.u < b.u;
@@ -90,16 +91,16 @@ inline void ysort(Segment &s) {
     std::swap(s.p, s.q);
 }
 
-inline double intceil(double x) { return int(ceil(x)); }
-inline double intfloor(double x) { return int(floor(x)); }
+inline int intceil(F x) { return int(ceil(x)); }
+inline int intfloor(F x) { return int(floor(x)); }
 
-inline double pythonmod(double a, double b) {
+inline F pythonmod(F a, F b) {
     auto r = a - floor(a / b) * b;
     if(r == b) return 0;
     return r;
 }
 
-inline size_t utoidx(const Dash &d, double u, double &o) {
+inline size_t utoidx(const Dash &d, F u, F &o) {
     u = pythonmod(u, d.sum.back());
     for(size_t i = 1; i != d.sum.size(); i++) {
         if(u < d.sum[i]) { o = u - d.sum[i-1]; return i-1; }
@@ -108,9 +109,9 @@ inline size_t utoidx(const Dash &d, double u, double &o) {
 }
 
 template<class Cb>
-void uvdraw(const Dash &pattern, double v, double u1, double u2, Cb cb) {
+void uvdraw(const Dash &pattern, F v, F u1, F u2, Cb cb) {
     if(pattern.dash.empty()) { cb(v, u1, u2); return;  }
-    double o;
+    F o;
     auto i = utoidx(pattern, u1, o);
     const auto &pi = pattern.dash[i];
     if(pi >= 0) { cb(v, u1, std::min(u2, u1+pi-o)); u1 += pi-o; }
@@ -127,7 +128,7 @@ void uvdraw(const Dash &pattern, double v, double u1, double u2, Cb cb) {
 }
 
 template<class Cb, class Wr>
-void uvspans(const Dash &pattern, std::vector<Segment> && segments, Cb cb, std::vector<Intersection> &uu, Wr wr) {
+void uvspans(const Dash &pattern, std::vector<Segment> & segments, Cb cb, std::vector<Intersection> &uu, Wr wr) {
     if(segments.empty()) return; // no segments
 
     for(auto &s : segments) ysort(s);
@@ -182,7 +183,7 @@ void uvspans(const Dash &pattern, std::vector<Segment> && segments, Cb cb, std::
         }
         std::sort(uu.begin(), uu.end());
         int winding = 0;
-        double old_u = -std::numeric_limits<double>::infinity();
+        F old_u = -std::numeric_limits<F>::infinity();
         for(const auto &isect : uu) {
             if(wr(winding)) uvdraw(pattern, v, old_u, isect.u, cb);
             winding += 2*isect.positive - 1;
@@ -193,7 +194,7 @@ void uvspans(const Dash &pattern, std::vector<Segment> && segments, Cb cb, std::
 
 struct HatchPattern {
     std::vector<Dash> d;
-    static HatchPattern FromFile(std::istream &fi, double scale) {
+    static HatchPattern FromFile(std::istream &fi, F scale) {
         HatchPattern result;
 
         std::string line;
@@ -208,7 +209,7 @@ struct HatchPattern {
         return result;
     }
 
-    static HatchPattern FromFile(const char *filename, double scale) {
+    static HatchPattern FromFile(const char *filename, F scale) {
         std::ifstream fi(filename);
         return FromFile(fi, scale);
     }
@@ -222,10 +223,9 @@ void xyhatch(const Dash &pattern, It start, It end, Cb cb, std::vector<Segment> 
         [&](const Segment &s)
         { return Segment{s.p * pattern.tf, s.q * pattern.tf, swapped != s.swapped };
     });
-    uvspans(pattern, std::move(uvsegments), [&](double v, double u1, double u2) {
+    uvspans(pattern, uvsegments, [&](F v, F u1, F u2) {
         Point p{u1, v}, q{u2, v};
-        Segment xy{ p * pattern.tr, q * pattern.tr, false };
-        cb(xy);
+        cb(Segment{ p * pattern.tr, q * pattern.tr, false });
     }, uu, wr);
 }
 
@@ -244,4 +244,3 @@ void xyhatch(const HatchPattern &pattern, const C &c, Cb cb, Wr wr) {
 }
 
 }
-#endif

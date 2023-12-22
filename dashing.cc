@@ -2,37 +2,37 @@
 #include "dashing.hh"
 namespace dashing
 {
-std::vector<double> parse_numbers(std::string line) {
+std::vector<F> parse_numbers(std::string line) {
     boost::algorithm::replace_all(line, ",", " ");
     std::istringstream fi(line);
-    std::vector<double> result;
-    double d;
+    std::vector<F> result;
+    F d;
     while((fi >> d)) result.push_back(d);
     return result;
 }
 
 PSMatrix PSMatrix::inverse() const {
-    auto i = 1. / determinant();
+    auto i = F(1.) / determinant();
     return PSMatrix{d*i, -b*i, -c*i, a*i, i*(c*f-e*d), i*(b*e-a*f)};
 }
 
-PSMatrix Translation(double x, double y) {
+PSMatrix Translation(F x, F y) {
     PSMatrix r{1.,0.,0.,1.,x,y};
     return r;
 }
 
-PSMatrix Rotation(double theta) {
-    double c = cos(theta), s = sin(theta);
+PSMatrix Rotation(F theta) {
+    F c = cos(theta), s = sin(theta);
     PSMatrix r{c,s,-s,c,0.,0.};
     return r;
 }
 
-PSMatrix XSkew(double xk) {
+PSMatrix XSkew(F xk) {
     PSMatrix r{1.,0.,xk,1.,0.,0.};
     return r;
 }
 
-PSMatrix YScale(double ys) {
+PSMatrix YScale(F ys) {
     PSMatrix r{1.,0.,0.,ys,0.,0.};
     return r;
 }
@@ -48,11 +48,11 @@ PSMatrix operator*(const PSMatrix &m1, const PSMatrix m2) {
     return r;
 }
 
-static double radians(double degrees) { return degrees * acos(0) / 90.; }
+static F radians(F degrees) { return degrees * acos(0) / 90.; }
 
-Dash::Dash(double th, double x0, double y0, double dx, double dy,
-        const std::vector<double>::const_iterator dbegin,
-        const std::vector<double>::const_iterator dend) : dash(dbegin, dend) {
+Dash::Dash(F th, F x0, F y0, F dx, F dy,
+        const std::vector<F>::const_iterator dbegin,
+        const std::vector<F>::const_iterator dend) : dash(dbegin, dend) {
     auto s = 0.;
     for(auto d : dash) { sum.push_back(s); s += fabs(d); }
     sum.push_back(s);
@@ -61,8 +61,8 @@ Dash::Dash(double th, double x0, double y0, double dx, double dy,
     tf = tr.inverse();
 }
 
-Dash Dash::FromString(const std::string &line, double scale) {
-    std::vector<double> words = parse_numbers(line);
+Dash Dash::FromString(const std::string &line, F scale) {
+    std::vector<F> words = parse_numbers(line);
     if(words.size() < 5)
         throw std::invalid_argument("not a valid dash specification");
     for(auto i = words.begin() + 1; i != words.end(); i++) *i *= scale;
