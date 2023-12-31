@@ -114,16 +114,20 @@ void uvdraw(const Dash &pattern, F v, F u1, F u2, Cb cb) {
     F o;
     auto i = utoidx(pattern, u1, o);
     const auto &pi = pattern.dash[i];
-    if(pi >= 0) { cb(v, u1, std::min(u2, u1+pi-o)); u1 += pi-o; }
+    if(i % 2 == 0) { cb(v, u1, std::min(u2, u1+pi-o)); u1 += pi-o; }
     else { u1 -= pi+o; }
-    i = i + 1;
-    if(i == pattern.dash.size()) i = 0;
+    i++;
+    if(i % 2) {
+        u1 += pattern.dash[i];
+        i++;
+    }
     for(auto u = u1; u < u2;) {
-        const auto &pi = pattern.dash[i];
-        if(pi >= 0) { cb(v, u, std::min(u2, u+pi)); u += pi; }
-        else { u -= pi; }
-        i = i + 1;
         if(i == pattern.dash.size()) i = 0;
+        const auto pi = pattern.dash[i];
+        cb(v, u, std::min(u2, u+pi));
+        u += pi;
+        u += pattern.dash[i+1];
+        i+=2;
     }
 }
 

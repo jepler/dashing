@@ -52,9 +52,19 @@ static F radians(F degrees) { return degrees * acos(0) / 90.; }
 
 Dash::Dash(F th, F x0, F y0, F dx, F dy,
         const std::vector<F>::const_iterator dbegin,
-        const std::vector<F>::const_iterator dend) : dash(dbegin, dend) {
+        const std::vector<F>::const_iterator dend)
+    : dash{dbegin, dend} {
     auto s = 0.;
-    for(auto d : dash) { sum.push_back(s); s += fabs(d); }
+    for(size_t i = 0; i < dash.size(); i++) {
+        bool is_negative = std::signbit(dash[i]);
+        bool index_is_odd = (i % 2) != 0;
+        if(is_negative != index_is_odd) {
+            throw std::invalid_argument("not a supported dash specification (but probably valid)");
+        }
+        dash[i] = std::abs(dash[i]);
+    }
+    if (dash.size() % 2) dash.push_back(0);
+    for(auto d : dash) { sum.push_back(s); s += d; }
     sum.push_back(s);
 
     tr = Translation(x0, y0) * Rotation(th) * XSkew(dx / dy) * YScale(dy);
