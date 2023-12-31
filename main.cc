@@ -85,7 +85,7 @@ int main(int argc, char **argv) {
     if(xit) return 0;
 
     if(bench) {
-        int nseg = 0;
+        size_t nseg = 0;
         auto print_seg = [&nseg](const Segment &s) { (void)s; nseg ++; };
         xyhatch(h, s, print_seg, [](int i) { return i != 0; } );
         std::cout << nseg << "\n";
