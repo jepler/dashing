@@ -16,3 +16,5 @@ dashing.pgo.0: main.cc dashing.cc dashing.hh parse_numbers.hh contours_and_segme
 dashing.pgo.1: dashing.pgo.0 main.cc dashing.cc dashing.hh parse_numbers.hh contours_and_segments.hh
 	./dashing.pgo.0 -b -s .002 data/HWOOD6E1.pat  data/sf.seg
 	+g++ -W -Wall -O2 -g -std=c++17 $(filter %.cc, $^) -o $@ -lboost_random -flto -DNDEBUG -fprofile-use
+dashing.omp: main.cc dashing.cc dashing.hh parse_numbers.hh contours_and_segments.hh
+	+g++ -W -Wall -O2 -g -std=c++17 $(filter %.cc, $^) -o $@ -lboost_random -flto -DNDEBUG -fopenmp -DDASHING_OMP

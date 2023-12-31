@@ -31,7 +31,7 @@ I would be interested in passing this project to a new maintainer.
     The winding rule `wr` defines which regions are in the interior of the contours.
     For each dash or dot in the resulting hatch, `cb` is called with the output segment.
 
-`xyhatch(const HatchPattern&, const C &segments, Cb cb, const char \*wr)`:
+`xyhatch(const HatchPattern&, const C &segments, Cb cb, const char *wr)`:
     The container C holds segments which must define a set of closed
     contours.
     The winding rule `wr` defines which regions are in the interior of the contours.
@@ -39,7 +39,7 @@ I would be interested in passing this project to a new maintainer.
 
 `HatchPattern::FromFile`: Read a hatch pattern from a file.
 
-`parse\_numbers(std::string line)`: Read a comma and/or space-separated
+`parse_numbers(std::string line)`: Read a comma and/or space-separated
     sequence of numbers into a vector
 
 `SegmentsFromFile`, `ContoursFromFile`, `ContourToSegments`, `ContoursToSegments`: Read and convert segments and contours
@@ -50,6 +50,22 @@ Useful winding rules include:
  * `[](int i) { return i > 0;}`, the greater-than-zero winding rule
  
 but any predicate of a single integer may be used.
+
+### Parallel API
+These APIs are available if built with `-fopenmp -DDASHING_OMP`
+
+`xyhatch_omp(const HatchPattern&, It start, It end, Cb cb, Wr wr)`:
+    Iterators `start`..`end` define a range of segments, which must define a set of closed contours.
+    The winding rule `wr` defines which regions are in the interior of the contours.
+    For each dash or dot in the resulting hatch, `cb` is called with the output segment and the thread ID.
+
+`xyhatch_omp(const HatchPattern&, const C &segments, Cb cb, Wr wr)`:
+    The container C holds segments which must define a set of closed
+    contours.
+    The winding rule `wr` defines which regions are in the interior of the contours.
+    For each dash or dot in the resulting hatch, `cb` is called with the output segment and the thread ID.
+
+### Other APIs
 
 Other items in the header files are implementation details.
 

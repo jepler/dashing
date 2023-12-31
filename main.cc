@@ -20,6 +20,11 @@ freely, subject to the following restrictions:
 
 // demo and benchmark program for dashing
 
+#include <new>
+#include <atomic>
+#if defined(DASHING_OMP)
+#include <omp.h>
+#endif
 #include "dashing.hh"
 #include "contours_and_segments.hh"
 
@@ -85,9 +90,20 @@ int main(int argc, char **argv) {
     if(xit) return 0;
 
     if(bench) {
-        size_t nseg = 0;
-        auto print_seg = [&nseg](const Segment &s) { (void)s; nseg ++; };
-        xyhatch(h, s, print_seg, [](int i) { return i != 0; } );
+#if defined(DASHING_OMP)
+        struct per_thread_count_type {
+            alignas(std::hardware_destructive_interference_size) size_t n;
+        };
+        auto max_threads = omp_get_max_threads();
+        std::vector<per_thread_count_type> thread_nseg(max_threads, per_thread_count_type{0});
+        auto count_seg = [&thread_nseg](const Segment &s, int iam) { (void)s; thread_nseg[iam].n++; };
+        xyhatch_omp(h, s, count_seg, [](int i) { return i != 0; } );
+        size_t nseg = std::accumulate(thread_nseg.begin(), thread_nseg.end(), size_t{}, [](size_t a, const per_thread_count_type &b) { return a + b.n; });
+#else
+        size_t nseg{};
+        auto count_seg = [&nseg](const Segment &s) { (void)s; nseg ++; };
+        xyhatch(h, s, count_seg, [](int i) { return i != 0; } );
+#endif
         std::cout << nseg << "\n";
         return 0;
     }

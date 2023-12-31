@@ -28,6 +28,9 @@ freely, subject to the following restrictions:
 #include <stdexcept>
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/algorithm/string/trim.hpp>
+#if defined(DASHING_OMP)
+#include <omp.h>
+#endif
 
 #include "dashing_F.hh"
 
@@ -113,7 +116,7 @@ void uvdraw(const Dash &pattern, F v, F u1, F u2, Cb cb) {
     if(pattern.dash.empty()) { cb(v, u1, u2); return;  }
     F o;
     auto i = utoidx(pattern, u1, o);
-    const auto &pi = pattern.dash[i];
+    const auto pi = pattern.dash[i];
     if(i % 2 == 0) { cb(v, u1, std::min(u2, u1+pi-o)); u1 += pi-o; }
     else { u1 -= pi+o; }
     i++;
@@ -122,7 +125,7 @@ void uvdraw(const Dash &pattern, F v, F u1, F u2, Cb cb) {
         i++;
     }
     for(auto u = u1; u < u2;) {
-        if(i == pattern.dash.size()) i = 0;
+        if(i >= pattern.dash.size()) i = 0;
         const auto pi = pattern.dash[i];
         cb(v, u, std::min(u2, u+pi));
         u += pi;
@@ -220,8 +223,13 @@ struct HatchPattern {
 };
 
 template<class It, class Cb, class Wr>
-void xyhatch(const Dash &pattern, It start, It end, Cb cb, std::vector<Segment> &uvsegments, std::vector<Intersection> &uu, Wr wr) {
-    uvsegments.clear();
+void xyhatch(const Dash &pattern, It start, It end, Cb cb, Wr wr) {
+    std::vector<Segment> uvsegments;
+    uvsegments.reserve(end-start);
+
+    std::vector<Intersection> uu;
+    uu.reserve(8);
+
     bool swapped = pattern.tf.determinant() < 0;
     std::transform(start, end, std::back_inserter(uvsegments),
         [&](const Segment &s)
@@ -235,16 +243,28 @@ void xyhatch(const Dash &pattern, It start, It end, Cb cb, std::vector<Segment> 
 
 template<class It, class Cb, class Wr>
 void xyhatch(const HatchPattern &pattern, It start, It end, Cb cb, Wr wr) {
-    std::vector<Segment> uvsegments;
-    uvsegments.reserve(end-start);
-    std::vector<Intersection> uu;
-    uu.reserve(8);
-    for(const auto &i : pattern.d) xyhatch(i, start, end, cb, uvsegments, uu, wr);
+    for(const auto &i : pattern.d) xyhatch(i, start, end, cb, wr);
 }
 
 template<class C, class Cb, class Wr>
 void xyhatch(const HatchPattern &pattern, const C &c, Cb cb, Wr wr) {
     xyhatch(pattern, c.begin(), c.end(), cb, wr);
 }
+
+#if defined(DASHING_OMP)
+template<class It, class Cb, class Wr>
+void xyhatch_omp(const HatchPattern &pattern, It start, It end, Cb cb, Wr wr) {
+    #pragma omp parallel for
+    for(const auto &i : pattern.d) {
+        int iam = omp_get_thread_num();
+        xyhatch(i, start, end, [iam, &cb](Segment s) { cb(s, iam); }, wr);
+    }
+}
+template<class C, class Cb, class Wr>
+void xyhatch_omp(const HatchPattern &pattern, const C &c, Cb cb, Wr wr) {
+    xyhatch_omp(pattern, c.begin(), c.end(), cb, wr);
+}
+
+#endif
 
 }
