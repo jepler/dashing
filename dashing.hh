@@ -182,7 +182,7 @@ void uvspans(const Dash &pattern, std::vector<Segment> & segments, Cb cb, std::v
             auto du = s.q.x - s.p.x;
             auto dv = s.q.y - s.p.y;
             assert(dv);
-            if(dv) uu.push_back(
+            uu.push_back(
                     Intersection{s.p.x + du * (v - s.p.y) / dv,s.swapped});
         }
         std::sort(uu.begin(), uu.end());
