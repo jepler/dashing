@@ -22,6 +22,7 @@ freely, subject to the following restrictions:
 
 #include <new>
 #include <atomic>
+#include <cstring>
 #if defined(DASHING_OMP)
 #include <omp.h>
 #endif

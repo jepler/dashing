@@ -3,7 +3,6 @@
 #include <vector>
 #include <string>
 #include <sstream>
-#include <boost/algorithm/string/replace.hpp>
 #include "dashing_F.hh"
 namespace dashing
 {
