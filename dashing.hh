@@ -20,14 +20,14 @@ freely, subject to the following restrictions:
 
 #pragma once
 
+#include <algorithm>
 #include <cmath>
 #include <cassert>
 #include <vector>
 #include <string>
 #include <fstream>
 #include <stdexcept>
-#include <boost/algorithm/string/replace.hpp>
-#include <boost/algorithm/string/trim.hpp>
+#include <span>
 #if defined(DASHING_OMP)
 #include <omp.h>
 #endif
@@ -181,7 +181,7 @@ void uvspans(const Dash &pattern, std::vector<Segment> & segments, Cb cb, std::v
             segments_begin ++;
         }
 
-        for(const auto &s : boost::make_iterator_range(heap_begin, heap_end)) {
+        for(const auto &s : std::span(heap_begin, heap_end)) {
             auto du = s.q.x - s.p.x;
             auto dv = s.q.y - s.p.y;
             assert(dv);
@@ -208,7 +208,9 @@ struct HatchPattern {
         while(getline(fi, line)) {
             auto i = line.find(";");
             if(i != line.npos) line.erase(i, line.npos);
-            boost::algorithm::trim(line);
+            while(!line.empty() && isspace(line.back())) {
+                line.pop_back();
+            }
             if(line.empty()) continue;
             if(line[0] == '*') continue;
             result.d.push_back(Dash::FromString(line, scale));

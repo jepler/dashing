@@ -3,11 +3,15 @@
 namespace dashing
 {
 std::vector<F> parse_numbers(std::string line) {
-    boost::algorithm::replace_all(line, ",", " ");
     std::istringstream fi(line);
     std::vector<F> result;
     F d;
-    while((fi >> d)) result.push_back(d);
+    while((fi >> d)) {
+        result.push_back(d);
+        for (auto p = fi.peek(); p == ',' || isspace(p); p = fi.peek()) {
+            fi.get();
+        }
+    }
     return result;
 }
 
