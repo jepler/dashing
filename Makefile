@@ -1,5 +1,5 @@
 .PHONY: default
-default: dashing dashing.omp
+default: dashing dashing-omp
 
 .PHONY: bench
 bench: dashing
@@ -17,5 +17,5 @@ dashing.pgo.1: dashing.pgo.0 main.cc dashing.cc dashing.hh parse_numbers.hh cont
 	./dashing.pgo.0 -b -s .002 data/HWOOD6E1.pat  data/sf.seg
 	+g++ -W -Wall -O2 -g -std=c++20 $(filter %.cc, $^) -o $@ -flto -DNDEBUG -fprofile-use
 
-dashing.omp: main.cc dashing.cc dashing.hh parse_numbers.hh contours_and_segments.hh
+dashing-omp: main.cc dashing.cc dashing.hh parse_numbers.hh contours_and_segments.hh
 	+g++ -W -Wall -O2 -g -std=c++20 $(filter %.cc, $^) -o $@ -flto -DNDEBUG -fopenmp -DDASHING_OMP

@@ -1,1 +1,6 @@
 dashing
+build*
+dashing-clang
+dashing-noopt
+dashing-omp
+dashing.pgo*
