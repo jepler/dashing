@@ -123,12 +123,16 @@ void uvdraw(const Dash &pattern, F v, F u1, F u2, Cb cb) {
     F o;
     auto i = utoidx(pattern, u1, o);
     const auto pi = pattern.dash[i];
-    if(i % 2 == 0) { cb(v, u1, std::min(u2, u1+pi-o)); u1 += pi-o; }
-    else { u1 -= pi+o; }
-    i++;
-    if(i % 2) {
-        u1 += pattern.dash[i];
-        i++;
+    if(i % 2 == 0) {
+        // Pattern starts inside a dash. Output the dash then skip the gap
+        cb(v, u1, std::min(u2, u1+pi-o));
+        u1 += pi-o;
+        u1 += pattern.dash[i+1];
+        i += 2;
+    } else {
+        // Pattern starts inside a gap. skip the gap
+        u1 += pi-o;
+        i += 1;
     }
     for(auto u = u1; u < u2;) {
         if(i >= pattern.dash.size()) i = 0;
