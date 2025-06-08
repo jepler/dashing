@@ -97,10 +97,16 @@ inline void ysort(Segment &s) {
 inline int intceil(F x) { return int(ceil(x)); }
 inline int intfloor(F x) { return int(floor(x)); }
 
-inline F pythonmod(F a, F b) {
-    auto r = a - floor(a / b) * b;
-    if(r == b) return 0;
-    return r;
+inline F pythonmod(F vx, F wx) {
+    auto mod = fmod(vx, wx);
+    if (mod) {
+        if ((wx < 0) != (mod < 0)) {
+            mod += wx;
+        }
+    } else {
+        mod = copysign(0.0, wx);
+    }
+    return mod;
 }
 
 inline size_t utoidx(const Dash &d, F u, F &o) {
