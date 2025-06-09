@@ -73,6 +73,9 @@ struct Dash {
     PSMatrix tr, tf;
     std::vector<F> dash, sum;
 
+    Dash(const PSMatrix &tr, const std::vector<F> &dash) :
+        tr{tr}, tf{tr.inverse()}, dash{dash} {}
+
     Dash(F th, F x0, F y0, F dx, F dy,
             const std::vector<F>::const_iterator dbegin,
             const std::vector<F>::const_iterator dend);
