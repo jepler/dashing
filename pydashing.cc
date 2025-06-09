@@ -8,6 +8,23 @@
 namespace py = pybind11;
 
 namespace {
+    py::tuple PSMatrixAsTuple(const dashing::PSMatrix & m) {
+        return py::make_tuple(m.a, m.b, m.c, m.d, m.e, m.f);
+    }
+
+    py::str PSMatrixRepr(const dashing::PSMatrix &m) {
+        return py::str("PSMatrix") + py::str(PSMatrixAsTuple(m));
+    }
+
+    py::tuple dashAsTuple(const dashing::Dash d) {
+        return py::make_tuple(d.tf, d.dash);
+    }
+
+    py::str dashRepr(const dashing::Dash &m) {
+        return py::str("dash") + py::str(dashAsTuple(m));
+    }
+
+
     dashing::HatchPattern hatchPatternFromString(std::string s, dashing::F scale) {
         std::istringstream is(s);
         return dashing::HatchPattern::FromFile(is, scale);
@@ -18,6 +35,13 @@ namespace {
         return hatchPatternFromString(content.cast<std::string>(), scale);
     }
 
+    py::tuple hatchPatternAsTuple(const dashing::HatchPattern &pattern) {
+        return py::tuple(py::make_iterator(pattern.d.begin(), pattern.d.end()));
+    }
+
+    py::str hatchPatternRepr(const dashing::HatchPattern &pattern) {
+        return py::str("HatchPattern") + py::str(hatchPatternAsTuple(pattern));
+    }
 
     enum WindingRule {
         EvenOdd, NonZero, GreaterThanZero
@@ -63,14 +87,49 @@ PYBIND11_MODULE(dashing, m) {
     )pbdoc";
 
     py::enum_<WindingRule>(m, "WindingRule")
-    .value("EvenOdd", WindingRule::EvenOdd)
-    .value("NonZero", WindingRule::NonZero)
-    .value("GreaterThanZero", WindingRule::GreaterThanZero);
+        .value("EvenOdd", WindingRule::EvenOdd)
+        .value("NonZero", WindingRule::NonZero)
+        .value("GreaterThanZero", WindingRule::GreaterThanZero)
+        ;
 
     py::class_<dashing::HatchPattern>(m, "HatchPattern",R"pbdoc(
     Encapsulate an autocad-style hatch pattern
     )pbdoc")
+        .def(py::init<const std::vector<dashing::Dash>&>())
+        .def("as_tuple", hatchPatternAsTuple)
         .def_static("fromString", hatchPatternFromString)
         .def_static("fromFile", hatchPatternFromFile)
-        .def("hatch", hatchPatternHatch);
+        .def("hatch", hatchPatternHatch)
+        .def("transformed", [](dashing::HatchPattern a, const dashing::PSMatrix b) {
+                auto b_inv = b.inverse();
+                for(auto &dash: a.d) {
+                    dash.tf = b * dash.tf;
+                    dash.tr = dash.tr * b_inv;
+                }
+                return a;
+            })
+        .def("__repr__", hatchPatternRepr)
+        .def("__str__", hatchPatternRepr)
+        ;
+
+    py::class_<dashing::Dash>(m, "Dash")
+        .def(py::init<const dashing::PSMatrix &, const std::vector<dashing::F> &>())
+        .def("as_tuple", dashAsTuple)
+        .def("__repr__", dashRepr)
+        .def("__str__", dashRepr)
+        ;
+
+    py::class_<dashing::PSMatrix>(m, "PSMatrix")
+        .def("as_tuple", PSMatrixAsTuple)
+        .def("__repr__", PSMatrixRepr)
+        .def("__str__", PSMatrixRepr)
+        .def("determinant", &dashing::PSMatrix::determinant)
+        .def("inverse", &dashing::PSMatrix::inverse)
+        .def("identity", []() { return dashing::PSMatrix(1,0,0,1,0,0); })
+        .def_static("translation", dashing::Translation)
+        .def_static("rotation", dashing::Rotation)
+        .def_static("xSkew", dashing::XSkew)
+        .def_static("yScale", dashing::YScale)
+        .def("__mul__", [](const dashing::PSMatrix &a, const dashing::PSMatrix b) { return a * b; });
+        ;
 }
