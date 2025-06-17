@@ -91,3 +91,22 @@ It accepts several commandline parameters:
     -s: scale the dash pattern file by a given factor
     
     -r rulename: select the given rulename, one of the following: odd nonzero positive negative abs_geq_two
+
+## Hatch pattern files
+
+The syntax of hatch pattern files is based on public documentation of Autocad.
+
+A file consists of:
+ * A line with a star followed by arbitrary, ignored text (the pattern name)
+ * A series of lines which specify individual dash patterns
+
+The dash-pattern lines consist of comma-separated values. The first five values have a set meaning:
+ * The dash angle in degrees
+ * The X dash origin
+ * The Y dash origin
+ * The X dash repeat distance
+ * The Y dash repeat distance
+
+The remaining values are alternating positive and negative nonzero values, giving the length of marked (positive) and skipped (negative) portions of the dash. In dashing, the number of values must be even, the first value must be positive, and the signs must strictly alternate.
+
+If there are no dash/space lengths specified, the entire line is stroked.

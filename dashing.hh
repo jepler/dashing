@@ -73,6 +73,9 @@ struct Dash {
     PSMatrix tr, tf;
     std::vector<F> dash, sum;
 
+    Dash(const PSMatrix &tr, const std::vector<F> &dash) :
+        tr{tr}, tf{tr.inverse()}, dash{dash} {}
+
     Dash(F th, F x0, F y0, F dx, F dy,
             const std::vector<F>::const_iterator dbegin,
             const std::vector<F>::const_iterator dend);
@@ -97,10 +100,16 @@ inline void ysort(Segment &s) {
 inline int intceil(F x) { return int(ceil(x)); }
 inline int intfloor(F x) { return int(floor(x)); }
 
-inline F pythonmod(F a, F b) {
-    auto r = a - floor(a / b) * b;
-    if(r == b) return 0;
-    return r;
+inline F pythonmod(F vx, F wx) {
+    auto mod = fmod(vx, wx);
+    if (mod) {
+        if ((wx < 0) != (mod < 0)) {
+            mod += wx;
+        }
+    } else {
+        mod = copysign(0.0, wx);
+    }
+    return mod;
 }
 
 inline size_t utoidx(const Dash &d, F u, F &o) {
@@ -117,12 +126,16 @@ void uvdraw(const Dash &pattern, F v, F u1, F u2, Cb cb) {
     F o;
     auto i = utoidx(pattern, u1, o);
     const auto pi = pattern.dash[i];
-    if(i % 2 == 0) { cb(v, u1, std::min(u2, u1+pi-o)); u1 += pi-o; }
-    else { u1 -= pi+o; }
-    i++;
-    if(i % 2) {
-        u1 += pattern.dash[i];
-        i++;
+    if(i % 2 == 0) {
+        // Pattern starts inside a dash. Output the dash then skip the gap
+        cb(v, u1, std::min(u2, u1+pi-o));
+        u1 += pi-o;
+        u1 += pattern.dash[i+1];
+        i += 2;
+    } else {
+        // Pattern starts inside a gap. skip the gap
+        u1 += pi-o;
+        i += 1;
     }
     for(auto u = u1; u < u2;) {
         if(i >= pattern.dash.size()) i = 0;
